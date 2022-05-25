@@ -1,0 +1,57 @@
+version: '3.4'
+
+networks:
+  produtos-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+
+services:
+  apiprodutos:
+    build:
+      context: ./apiproduto
+      dockerfile: Dockerfile
+    container_name: apiprodutos
+    ports:
+      - 8080:8080
+    networks:
+      - produtos-network
+    environment:
+      API_AVALIACOES_NAME: 'apiavaliacoes'
+      API_AVALIACOES_PORT: '8081'
+  
+  apiavaliacoes:
+    build:
+      context: ./apiavaliacoes
+      dockerfile: Dockerfile
+    container_name: apiavaliacoes
+    ports:
+      - 8081:8081
+    networks:
+      - produtos-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - 9090:9090
+    networks:
+      - produtos-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - 3000:3000
+    networks:
+      - produtos-network
+
